@@ -4,18 +4,19 @@
       "inheritEnvironments": [
         "msvc_x86"
       ],
-      "name": "x86-Debug",
+      "name": "GCC",
       "includePath": [
-        "${env.INCLUDE}",
         "${workspaceRoot}\\**"
       ],
       "defines": [
-        "WIN32",
         "_DEBUG",
         "UNICODE",
         "_UNICODE"
       ],
-      "intelliSenseMode": "windows-msvc-x86"
+      "compilerPath": "C:\\MinGW\\bin\\g++.exe",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-x64"
     }
   ]
 }
