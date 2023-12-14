@@ -3,15 +3,19 @@
         {
             "type": "cppbuild",
             "label": "C/C++: cl.exe build file",
-            "command": "C:\\MinGW\\bin\\g++.exe",
+            "command": "C:\\mingw\\bin\\g++.exe",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
                 "${workspaceFolder}\\src\\main.cpp",
                 "-o",
                 "${workspaceFolder}\\ScoutCardMaker2024.exe",
-                "-luser32",
-                "-lgdi32"
+                "-IC:\\raylib\\src",     // Include the Raylib headers
+                "-LC:\\raylib\\src",     // Include the Raylib headers
+                "-lraylib", 
+                "-lopengl32", 
+                "-lgdi32", 
+                "-lwinmm"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
