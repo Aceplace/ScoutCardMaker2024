@@ -1,7 +1,7 @@
 #include "common.h"
 #include <string>
 
-namespace ScoutCardMaker2024 
+namespace SCM24 
 {
     bool is_offensive_lineman_not_center(PlayerTag player_tag)
     {
