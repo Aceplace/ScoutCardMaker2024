@@ -4,8 +4,6 @@
             "name": "gcc",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:\\raylib\\raylib\\src",
-                "C:\\raylib\\raygui\\src"
             ],
             "defines": [
                 "_DEBUG",

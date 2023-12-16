@@ -1,4 +1,4 @@
-#include "common.cpp"
+#include "scm/common.cpp"
 #include "raylib.h"
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
