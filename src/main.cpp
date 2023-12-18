@@ -1,5 +1,6 @@
 #include "scm/common.cpp"
 #include "scm/formation.cpp"
+#include "scm/formation_utils.cpp"
 #include "raylib.h"
 #define RAYGUI_IMPLEMENTATION
 #include "raygui.h"
