@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "*.ejs": "ejs",
-        "*.fbvr23": "json",
-        "*.scm23": "json",
-        "optional": "cpp",
-        "iosfwd": "cpp"
-    }
-}

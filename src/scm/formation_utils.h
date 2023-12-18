@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <algorithm>
+#include <optional>
 
 namespace SCM24
 {
@@ -250,7 +251,7 @@ namespace SCM24
     }
 
 
-    std::vector<Player> get_detached_players(std::vector<Player> players, Direction direction, DirectionOrientation direction_orientation)
+    std::vector<Player> get_detached_players(std::vector<Player>& players, Direction direction, DirectionOrientation direction_orientation)
     {
         std::vector<Player> players_ordered = get_players_ordered(players, direction, direction_orientation);
         AttachedBoundaries core = get_attached_boundaries(players_ordered);
@@ -264,125 +265,104 @@ namespace SCM24
         );
         return result;   
     }
+
+    bool tag_within_players(const std::vector<Player>& players, PlayerTag player_tag)
+    {
+        for (size_t i = 0; i < players.size(); i++)
+        {
+            if (players[i].player_tag == player_tag)
+                return true;
+        }
+        return false;   
+    }
+
+    std::vector<Player> get_attached_players(std::vector<Player>& players, Direction direction, DirectionOrientation direction_orientation)
+    {
+        std::vector<Player> players_ordered = get_players_ordered(players, direction, direction_orientation);
+        std::vector<Player> backfield_players = get_backfield(players, direction, direction_orientation);
+        AttachedBoundaries core = get_attached_boundaries(players_ordered);
+
+        std::vector<Player> result;
+        std::copy_if(players_ordered.begin(), players_ordered.end(), std::back_inserter(result), 
+            [core, &backfield_players](const Player& player) { 
+                return  player.pos.x > core.left_boundary && 
+                        player.pos.x < core.right_boundary &&
+                        !is_offensive_lineman_not_center(player.player_tag) &&
+                        !tag_within_players(backfield_players, player.player_tag);
+            }
+        );
+
+        return result;
+    }
+
+    std::vector<Player> get_receivers(std::vector<Player> players, Direction direction, DirectionOrientation direction_orientation)
+    {
+        std::vector<Player> backfield_players = get_backfield(players, Direction::RIGHT, DirectionOrientation::OUTSIDE_ACROSS);
+        std::vector<Player> players_ordered = get_players_ordered(players, direction, direction_orientation);
+
+        std::vector<Player> result;
+        std::copy_if(players_ordered.begin(), players_ordered.end(), std::back_inserter(result), 
+            [&backfield_players](const Player& player) { 
+                return  !tag_within_players(backfield_players, player.player_tag) &&
+                        !is_offensive_lineman_not_center(player.player_tag);
+            }
+        );
+
+        return result;
+    }
+
+    Direction player_side(std::vector<Player> players, PlayerTag player_tag)
+    {
+        float center_x = get_player_with_tag(players, PlayerTag::OC).pos.x;
+        float player_x = get_player_with_tag(players, player_tag).pos.x;
+        return player_x > center_x ? Direction::RIGHT : Direction::LEFT;
+    }
+
+    std::optional<Direction> get_receiver_strength(std::vector<Player> players)
+    {
+        int receivers_left = get_receivers(players, Direction::LEFT, DirectionOrientation::OUTSIDE_IN).size();
+        int receivers_right = get_receivers(players, Direction::RIGHT, DirectionOrientation::OUTSIDE_IN).size();
+
+        if (receivers_right > receivers_left)
+            return Direction::RIGHT;
+        if (receivers_left > receivers_right)
+            return Direction::LEFT;
+        return std::nullopt;
+    }
+
+    std::optional<Direction> get_attached_strength(std::vector<Player> players)
+    {
+        int attached_left = get_attached_players(players, Direction::LEFT, DirectionOrientation::OUTSIDE_IN).size();
+        int attached_right = get_attached_players(players, Direction::RIGHT, DirectionOrientation::OUTSIDE_IN).size();
+
+        if (attached_right > attached_left)
+            return Direction::RIGHT;
+        if (attached_left > attached_right)
+            return Direction::LEFT;
+        return std::nullopt;
+    }
+
+    std::optional<Direction> get_offset_back_strength(std::vector<Player> players)
+    {
+        int offset_backs_to_left = get_backfield(players, Direction::LEFT, DirectionOrientation::OUTSIDE_IN).size();
+        int offset_backs_to_right = get_backfield(players, Direction::RIGHT, DirectionOrientation::OUTSIDE_IN).size();
+
+        if (offset_backs_to_right > offset_backs_to_left)
+            return Direction::RIGHT;
+        if (offset_backs_to_left > offset_backs_to_right)
+            return Direction::LEFT;
+        return std::nullopt;
+    }
+
+    std::vector<Player> offense_players(std::vector<Player> players)
+    {
+        std::vector<Player> result;
+        std::copy_if(players.begin(), players.end(), std::back_inserter(result),
+            [](const Player& player) { 
+                return player.player_side == PlayerSide::OFFENSE;
+            }
+        );
+
+        return result;
+    }
 }
-
-
-
-
-
-
-/*
-namespace SCM24
-{
-        
-
-        
-        
-        
-
-        
-
-        
-
-        
-
-        
-        
-        public static List<Player> get_attached_players(List<Player> players, Direction direction, DirectionOrientation direction_orientation)
-        {
-                List<Player> players_ordered = get_players_ordered(players, direction, direction_orientation);
-                List<Player> backfield_players = get_backfield(players, direction, direction_orientation);
-                (float core_left_boundary, float core_right_boundary) = get_attached_boundaries(players_ordered);
-                return players_ordered.Where(player => player.pos.X > core_left_boundary && 
-                                                       player.pos.X < core_right_boundary && 
-                                                       !player.player_tag.is_offensive_lineman_not_center() &&
-                                                       !backfield_players.tag_within_players(player.player_tag)).ToList();
-        }
-
-        public static List<Player> get_receivers(List<Player> players, Direction direction, DirectionOrientation direction_orientation)
-        {
-                List<Player> back_field_players = get_backfield(players, Direction.RIGHT, DirectionOrientation.OUTSIDE_ACROSS);
-                List<Player> players_ordered = get_players_ordered(players, direction, direction_orientation);
-                return players_ordered.Where(player => !back_field_players.tag_within_players(player.player_tag) && !player.player_tag.is_offensive_lineman_not_center()).ToList();
-        }
-
-        public static Direction player_side(List<Player> players, PlayerTag player_tag)
-        {
-                float center_x = players.get_player_with_tag(PlayerTag.OC).pos.X;
-                float player_x = players.get_player_with_tag(player_tag).pos.X;
-                return player_x > center_x ? Direction.RIGHT : Direction.LEFT;
-        }
-
-        public static Direction? get_receiver_strength(List<Player> players)
-        {
-                int receivers_left = get_receivers(players, Direction.LEFT, DirectionOrientation.OUTSIDE_IN).Count;
-                int receivers_right = get_receivers(players, Direction.RIGHT, DirectionOrientation.OUTSIDE_IN).Count;
-
-                if (receivers_right > receivers_left)
-                        return Direction.RIGHT;
-                if (receivers_left > receivers_right)
-                        return Direction.LEFT;
-                return null;
-        }
-        
-        public static Direction? get_attached_strength(List<Player> players)
-        {
-                int attached_left = get_attached_players(players, Direction.LEFT, DirectionOrientation.OUTSIDE_IN).Count;
-                int attached_right = get_attached_players(players, Direction.RIGHT, DirectionOrientation.OUTSIDE_IN).Count;
-
-                if (attached_right > attached_left)
-                        return Direction.RIGHT;
-                if (attached_left > attached_right)
-                        return Direction.LEFT;
-                return null;
-        }
-        
-        public static Direction? get_offset_back_strength(List<Player> players)
-        {
-                int offset_backs_to_left = get_backfield(players, Direction.LEFT, DirectionOrientation.OUTSIDE_IN).Count;
-                int offset_backs_to_right = get_backfield(players, Direction.RIGHT, DirectionOrientation.OUTSIDE_IN).Count;
-
-                if (offset_backs_to_right > offset_backs_to_left)
-                        return Direction.RIGHT;
-                if (offset_backs_to_left > offset_backs_to_right)
-                        return Direction.LEFT;
-                return null;
-        }
-        
-        static List<Player> offense_players(this List<Player> players)
-        {
-                return players.Where(player => player.player_side == PlayerSide.OFFENSE).ToList();
-
-                
-        }
-
-        static (float, float) get_attached_boundaries(List<Player> players)
-        {
-                const float ATTACH_DISTANCE = 3;
-                const float STARTING_DISTANCE = 8;
-                players = players.offense_players();
-                float center_x = players.get_player_with_tag(PlayerTag.OC).pos.X;
-                float core_left = center_x - STARTING_DISTANCE - ATTACH_DISTANCE;
-                float core_right = center_x + STARTING_DISTANCE + ATTACH_DISTANCE;
-                for (int i = 1; i <= 11; i++)
-                {
-                        foreach (Player player in players)
-                        {
-                                if (player.pos.X >= core_left - ATTACH_DISTANCE && player.pos.X <= core_right + ATTACH_DISTANCE && player.pos.Y > -3)
-                                {
-                                        core_left = MathF.Min(core_left, player.pos.X - ATTACH_DISTANCE);
-                                        core_right = MathF.Max(core_right, player.pos.X + ATTACH_DISTANCE);
-                                }
-                        }
-                }
-                return (core_left, core_right);
-        }
-
-        static bool tag_within_players(this List<Player> players, PlayerTag player_tag)
-        {
-                return players.Any(player => player.player_tag == player_tag);
-        }
-}
-
-
-*/
