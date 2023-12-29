@@ -8,7 +8,7 @@
 
 namespace SCM24
 {
-    enum DirectionOrientation { OUTSIDE_ACROSS, OUTSIDE_IN, INSIDE_OUT };
+    enum class DirectionOrientation { OUTSIDE_ACROSS, OUTSIDE_IN, INSIDE_OUT };
 
     struct AttachedBoundaries 
     {
@@ -28,7 +28,6 @@ namespace SCM24
     
     std::vector<Player> get_backfield(std::vector<Player>& players, Direction direction, DirectionOrientation direction_orientation);
     
-
     AttachedBoundaries get_attached_boundaries(std::vector<Player>& players);
 
     std::vector<Player> get_detached_players(std::vector<Player>& players, Direction direction, DirectionOrientation direction_orientation);
