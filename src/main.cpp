@@ -78,12 +78,12 @@ void remove_player(std::vector<SelectedPlayerInfo> selected_player_infos, Player
 
 class PlayerFieldGui 
 {
-    const float PLAYER_WIDTH_OFFENSE = 2.5f;
-    const float PLAYER_HEIGHT_OFFENSE = 0.6f;
-    const float TAG_WIDTH_OFFENSE = 1.4f;
-    const float TAG_HEIGHT_OFFENSE = 0.6f;
-    const float TAG_WIDTH_DEFENSE = 1.6f;
-    const float TAG_HEIGHT_DEFENSE = 0.8f;
+    const float PLAYER_WIDTH_OFFENSE = 2.5;
+    const float PLAYER_HEIGHT_OFFENSE = 0.6;
+    const float TAG_WIDTH_OFFENSE = 1.4;
+    const float TAG_HEIGHT_OFFENSE = 0.6;
+    const float TAG_WIDTH_DEFENSE = 1.6;
+    const float TAG_HEIGHT_DEFENSE = 0.8;
     
     const Color PLAYER_UNSELECTED_COLOR_OFFENSE = LIGHTGRAY;
     const Color PLAYER_SELECTED_COLOR_OFFENSE = SKYBLUE;
@@ -146,7 +146,7 @@ public:
     }
 };
 
-class FormationEditGui : PlayerFieldGui
+class FormationEditGui : public PlayerFieldGui
 {
 public:
     // const float _FORMATION_DETAILS_HEIGHT = 115f;
@@ -322,8 +322,6 @@ public:
 
 enum class FieldType { HIGH_SCHOOL, COLLEGE, NFL };
 
-
-
 void draw_field(FieldType field_type) 
 {
     const float _FIELD_LEFT_SIDELINE_X = -54;
@@ -398,7 +396,7 @@ void draw_field(FieldType field_type)
     DrawLineV(v2(_FIELD_RIGHT_SIDELINE_X, -60), v2(_FIELD_RIGHT_SIDELINE_X, 60), line_color);
 }
 
-Matrix get_map_matrix(float x1_old, float x2_old, float x1_new, float x2_new, float y1_old, float y2_old, float y1_new, float y2_new)
+Matrix get_map_matrix_1(float x1_old, float x2_old, float x1_new, float x2_new, float y1_old, float y2_old, float y1_new, float y2_new)
 {
     // Calculate scale and translation factors
     float scaleX = (x2_new - x1_new) / (x2_old - x1_old);
@@ -412,6 +410,67 @@ Matrix get_map_matrix(float x1_old, float x2_old, float x1_new, float x2_new, fl
     result = MatrixMultiply(result, MatrixTranslate(translateX, translateY, 0.0f));
 
     return result;
+}
+
+Matrix get_map_matrix(float x1_old, float x2_old, float x1_new, float x2_new, float y1_old, float y2_old, float y1_new, float y2_new, Camera2D camera)
+{
+    // Calculate scale and translation factors
+    float scaleX = (x2_new - x1_new) / (x2_old - x1_old);
+    scaleX = abs(scaleX);
+    float scaleY = (y2_new - y1_new) / (y2_old - y1_old);
+    scaleY = abs(scaleY);
+    float translateX = (x2_new - x1_new) / 2.0f;
+    float translateY = (y2_new - y1_new) / 2.0f;
+
+    // Create the transformation matrix
+    Matrix result = { 0 };
+    result = MatrixMultiply(MatrixScale(scaleX, scaleY, 1.0f), result);
+    result = MatrixMultiply(MatrixTranslate(translateX, translateY, 0.0f), result);
+
+    // return result;
+
+    
+
+
+
+    Matrix matTransform = { 0 };
+    Matrix matOrigin = MatrixTranslate(-camera.target.x, -camera.target.y, 0.0f);
+    // Matrix matScale = MatrixScale(camera.zoom, camera.zoom, 1.0f);
+    Matrix matScale = MatrixScale(scaleX, scaleY, 1.0f);
+
+    // matOrigin = MatrixTranslate(-translateX, -translateY, 0.0f);
+    // matScale = MatrixScale(camera.zoom, camera.zoom, 1.0f);
+
+    matTransform = MatrixMultiply(matOrigin, matScale);
+
+    return matTransform;
+}
+
+Matrix MYGetCameraMatrix2D(Camera2D camera)
+{
+    Matrix matTransform = { 0 };
+    // The camera in world-space is set by
+    //   1. Move it to target
+    //   2. Rotate by -rotation and scale by (1/zoom)
+    //      When setting higher scale, it's more intuitive for the world to become bigger (= camera become smaller),
+    //      not for the camera getting bigger, hence the invert. Same deal with rotation.
+    //   3. Move it by (-offset);
+    //      Offset defines target transform relative to screen, but since we're effectively "moving" screen (camera)
+    //      we need to do it into opposite direction (inverse transform)
+
+    // Having camera transform in world-space, inverse of it gives the modelview transform.
+    // Since (A*B*C)' = C'*B'*A', the modelview is
+    //   1. Move to offset
+    //   2. Rotate and Scale
+    //   3. Move by -target
+    Matrix matOrigin = MatrixTranslate(-camera.target.x, -camera.target.y, 0.0f);
+    Matrix matRotation = MatrixRotate((Vector3){ 0.0f, 0.0f, 1.0f }, camera.rotation*DEG2RAD);
+    Matrix matScale = MatrixScale(camera.zoom, camera.zoom, 1.0f);
+    Matrix matTranslation = MatrixTranslate(camera.offset.x, camera.offset.y, 0.0f);
+
+    matTransform = MatrixMultiply(MatrixMultiply(matOrigin, MatrixMultiply(matScale, matRotation)), matTranslation);
+
+    return matTransform;
 }
 
 int main() {
@@ -430,18 +489,40 @@ int main() {
 
     FormationEditGui formation_edit_gui(&formation_library);
 
-    while (!WindowShouldClose()) {
+    Camera2D camera = {};
+    camera.target = { -56, -60 };
+    camera.zoom = 5;
+
+    while (!WindowShouldClose()) 
+    {
         BeginDrawing();
         
         ClearBackground(GREEN);
 
-        Matrix map_matrix = get_map_matrix(-58, 58, 0, GetScreenWidth(), 65, -65, 0, GetScreenHeight()); 
-        rlSetMatrixModelview(MatrixMultiply(map_matrix, MatrixIdentity()));
-
+        // rlSetMatrixModelview(MatrixIdentity());
+        // DrawEllipse(0, 0, 20, 20, BLUE);
+        // rlDrawRenderBatchActive();
+        
+        // Matrix map_matrix = get_map_matrix(-58, 58, 0, GetScreenWidth(), 65, -65, 0, GetScreenHeight()); 
+        // rlSetMatrixModelview(map_matrix);
+        // BeginMode2D(camera);
+        Matrix map_matrix = get_map_matrix(-58, 58, 0, GetScreenWidth(), 65, -65, 0, GetScreenHeight(), camera); 
+        // rlSetMatrixModelview(MYGetCameraMatrix2D(camera));
+        rlSetMatrixModelview(map_matrix);
         draw_field(FieldType::HIGH_SCHOOL);
+        DrawEllipseLines(0, 0, 5, 5, YELLOW);
+        DrawEllipse(0, 0, 2, 2, BLUE);
+        // EndMode2D();
+        // DrawEllipseLines(0, 0, 5, 5, YELLOW);
+        // DrawEllipse(0, 0, 2, 2, BLUE);
+
+
+        // formation_edit_gui.update_and_render();
 
         EndDrawing();
     }
+
+
     CloseWindow();
 
     return 0;
