@@ -121,7 +121,7 @@ public:
 
         if (player->player_side == PlayerSide::OFFENSE)
         {
-            DrawEllipse(player->pos.x, player->pos.y, PLAYER_WIDTH_OFFENSE, PLAYER_HEIGHT_OFFENSE, player_color);
+            DrawEllipse(player->pos.x, player->pos.y, PLAYER_WIDTH_OFFENSE / 2, PLAYER_HEIGHT_OFFENSE / 2, player_color);
             // MCYGraphics.draw_immediate_text(PlayerFieldGuiConstants.PLAYER_LABEL_MAP[player.player_tag], player.pos.X, player.pos.Y, PlayerFieldGuiConstants.TAG_WIDTH_OFFENSE, PlayerFieldGuiConstants.TAG_HEIGHT_OFFENSE, Color4.Black);
             // if (dot_color_for_player != null)
             //     MCYGraphics.draw_immediate_rectangle(player.pos.X, player.pos.Y, 0.3f, 0.3f, dot_color_for_player.Value);        
@@ -275,7 +275,7 @@ public:
         #pragma endregion
 
         #pragma region Boundary Player Default Positions in Editor
-        for (Player player: _boundary_players)
+        for (Player& player: _boundary_players)
         {
             switch (player.player_tag)
             {
@@ -396,54 +396,21 @@ void draw_field(FieldType field_type)
     DrawLineV(v2(_FIELD_RIGHT_SIDELINE_X, -60), v2(_FIELD_RIGHT_SIDELINE_X, 60), line_color);
 }
 
-Matrix get_map_matrix_1(float x1_old, float x2_old, float x1_new, float x2_new, float y1_old, float y2_old, float y1_new, float y2_new)
+Matrix get_map_matrix(float x1_old, float x2_old, float x1_new, float x2_new, float y1_old, float y2_old, float y1_new, float y2_new)
 {
-    // Calculate scale and translation factors
     float scaleX = (x2_new - x1_new) / (x2_old - x1_old);
     float scaleY = (y2_new - y1_new) / (y2_old - y1_old);
-    float translateX = (x2_new - x1_new) / 2.0f;
-    float translateY = (y2_new - y1_new) / 2.0f;
 
-    // Create the transformation matrix
-    Matrix result = MatrixIdentity();
-    result = MatrixMultiply(result, MatrixScale(scaleX, scaleY, 1.0f));
-    result = MatrixMultiply(result, MatrixTranslate(translateX, translateY, 0.0f));
+    float translateX = (x2_old - x1_old) / 2.0f;
+    float translateY = (y2_old - y1_old) / 2.0f;
 
-    return result;
-}
-
-Matrix get_map_matrix(float x1_old, float x2_old, float x1_new, float x2_new, float y1_old, float y2_old, float y1_new, float y2_new, Camera2D camera)
-{
-    // Calculate scale and translation factors
-    float scaleX = (x2_new - x1_new) / (x2_old - x1_old);
-    scaleX = abs(scaleX);
-    float scaleY = (y2_new - y1_new) / (y2_old - y1_old);
-    scaleY = abs(scaleY);
-    float translateX = (x2_new - x1_new) / 2.0f;
-    float translateY = (y2_new - y1_new) / 2.0f;
-
-    // Create the transformation matrix
     Matrix result = { 0 };
-    result = MatrixMultiply(MatrixScale(scaleX, scaleY, 1.0f), result);
-    result = MatrixMultiply(MatrixTranslate(translateX, translateY, 0.0f), result);
-
-    // return result;
-
-    
-
-
-
-    Matrix matTransform = { 0 };
-    Matrix matOrigin = MatrixTranslate(-camera.target.x, -camera.target.y, 0.0f);
-    // Matrix matScale = MatrixScale(camera.zoom, camera.zoom, 1.0f);
+    Matrix matOrigin = MatrixTranslate(translateX, translateY, 0.0f);
     Matrix matScale = MatrixScale(scaleX, scaleY, 1.0f);
 
-    // matOrigin = MatrixTranslate(-translateX, -translateY, 0.0f);
-    // matScale = MatrixScale(camera.zoom, camera.zoom, 1.0f);
+    result = MatrixMultiply(matOrigin, matScale);
 
-    matTransform = MatrixMultiply(matOrigin, matScale);
-
-    return matTransform;
+    return result;
 }
 
 Matrix MYGetCameraMatrix2D(Camera2D camera)
@@ -499,25 +466,12 @@ int main() {
         
         ClearBackground(GREEN);
 
-        // rlSetMatrixModelview(MatrixIdentity());
-        // DrawEllipse(0, 0, 20, 20, BLUE);
-        // rlDrawRenderBatchActive();
-        
-        // Matrix map_matrix = get_map_matrix(-58, 58, 0, GetScreenWidth(), 65, -65, 0, GetScreenHeight()); 
-        // rlSetMatrixModelview(map_matrix);
-        // BeginMode2D(camera);
-        Matrix map_matrix = get_map_matrix(-58, 58, 0, GetScreenWidth(), 65, -65, 0, GetScreenHeight(), camera); 
-        // rlSetMatrixModelview(MYGetCameraMatrix2D(camera));
+        Matrix map_matrix = get_map_matrix(-58, 58, 0, GetScreenWidth(), -65, 65, 0, GetScreenHeight()); 
         rlSetMatrixModelview(map_matrix);
         draw_field(FieldType::HIGH_SCHOOL);
-        DrawEllipseLines(0, 0, 5, 5, YELLOW);
-        DrawEllipse(0, 0, 2, 2, BLUE);
-        // EndMode2D();
-        // DrawEllipseLines(0, 0, 5, 5, YELLOW);
         // DrawEllipse(0, 0, 2, 2, BLUE);
 
-
-        // formation_edit_gui.update_and_render();
+        formation_edit_gui.update_and_render();
 
         EndDrawing();
     }
